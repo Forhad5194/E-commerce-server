@@ -6,6 +6,7 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { cannect } from "./config/cannectDB.js";
+import userRoute from "./route/user.route.js";
 
 
 const app = express(cors({
@@ -26,7 +27,7 @@ app.get("/" , (req , res) => {
     res.json({ message: "Hello World. I am a new server ." })
 })
 
-
+app.use("/api/user" , userRoute)
 
 cannect().then( () => {
     app.listen(PORT , () => {
