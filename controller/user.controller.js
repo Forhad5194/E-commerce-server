@@ -2,6 +2,8 @@ import { sendEmail } from "../config/sendEmail.js";
 import UserModel from "../model/user.model.js";
 import bcryptjs from "bcryptjs"
 import { verifyEmailTemplate } from "../utils/verifyEmailTemplate.js";
+import { GenerateAccessToken } from "../utils/GenerateAccessToken.js";
+import { GenerateRefreshToken } from "../utils/GenerateRefreshToken.js";
 
 
 
@@ -121,6 +123,13 @@ export async function loginController(request, response) {
         try {
 
             const { email, password } = request.body;
+            if(!email || !password) {
+                return response.status(400).json({
+                    message: "provide email, password",
+                    error: true,
+                    success: false
+                })
+            }
             const user = await UserModel.findOne({email})
             if(!user) {
                 return response.status(400).json({
@@ -147,25 +156,26 @@ export async function loginController(request, response) {
                 }
 
 
+                const accessToken = await GenerateAccessToken(user._id)
+                const refreshToken = await GenerateRefreshToken(user._id)
 
+                const cookiesOptions = {
+                    httpOnly : true,
+                    secure: true,
+                    someSite : "None"
+                }
+                response.cookie("access_token", accessToken, cookiesOptions)
+                response.cookie("refresh_token", refreshToken, cookiesOptions)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                return response.json({
+                    message: "LogIn Successfully",
+                    error: false,
+                    success: true,
+                    data: {
+                        accessToken,
+                        refreshToken
+                    }
+                })
         } catch (error) {
             return response.status(500).json({
                 message: error.message || error,
@@ -181,3 +191,16 @@ export async function loginController(request, response) {
 
 
 // Login controller End
+
+
+// LogOut controller start
+
+
+
+
+
+
+
+
+
+// LogOut controller End
