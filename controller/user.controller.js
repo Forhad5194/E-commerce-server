@@ -120,70 +120,71 @@ export async function verifyEmailController(request, response) {
 // Login controller start
 
 export async function loginController(request, response) {
-        try {
+    try {
 
-            const { email, password } = request.body;
-            if(!email || !password) {
-                return response.status(400).json({
-                    message: "provide email, password",
-                    error: true,
-                    success: false
-                })
-            }
-            const user = await UserModel.findOne({email})
-            if(!user) {
-                return response.status(400).json({
-                    message: "user not registered",
-                    error: true,
-                    success: false,
-                })
-            }
-                if(user.status !== "Active") {
-                     return response.status(400).json({
-                         message: "Contact to support tems",
-                         error: true,
-                         success: false,
-                     })
-                }
-
-                const checkPassword = await bcryptjs.compare(password, user.password)
-                if(!checkPassword) {
-                    return response.status(400).json({
-                        message: "Invalid password",
-                        error: true,
-                        success: false,
-                    })
-                }
-
-
-                const accessToken = await GenerateAccessToken(user._id)
-                const refreshToken = await GenerateRefreshToken(user._id)
-
-                const cookiesOptions = {
-                    httpOnly : true,
-                    secure: true,
-                    someSite : "None"
-                }
-                response.cookie("access_token", accessToken, cookiesOptions)
-                response.cookie("refresh_token", refreshToken, cookiesOptions)
-
-                return response.json({
-                    message: "LogIn Successfully",
-                    error: false,
-                    success: true,
-                    data: {
-                        accessToken,
-                        refreshToken
-                    }
-                })
-        } catch (error) {
-            return response.status(500).json({
-                message: error.message || error,
+        const { email, password } = request.body;
+        if (!email || !password) {
+            return response.status(400).json({
+                message: "provide email, password",
+                error: true,
+                success: false
+            })
+        }
+        const user = await UserModel.findOne({ email })
+        if (!user) {
+            return response.status(400).json({
+                message: "user not registered",
                 error: true,
                 success: false,
             })
-            
         }
+        if (user.status !== "Active") {
+            return response.status(400).json({
+                message: "Contact to support tems",
+                error: true,
+                success: false,
+            })
+        }
+
+        const checkPassword = await bcryptjs.compare(password, user.password)
+        if (!checkPassword) {
+            return response.status(400).json({
+                message: "Invalid password",
+                error: true,
+                success: false,
+            })
+        }
+
+
+        const accessToken = await GenerateAccessToken(user._id)
+        const refreshToken = await GenerateRefreshToken(user._id)
+
+        const cookieOptions = {
+
+            httpOnly: true,
+            secure: true,
+            someSite: "None"
+        }
+        response.cookie("accessToken", accessToken, cookieOptions)
+        response.cookie("refreshToken", refreshToken, cookieOptions)
+
+        return response.json({
+            message: "LogIn Successfully",
+            error: false,
+            success: true,
+            data: {
+                accessToken,
+                refreshToken
+            }
+        })
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false,
+        })
+
+    }
 }
 
 
@@ -194,6 +195,43 @@ export async function loginController(request, response) {
 
 
 // LogOut controller start
+
+export async function logoutController(request, response) {
+    try {
+        const userid = request.userId
+        const cookieOptions = {
+            httpOnly: true,
+            secure: true,
+            someSite: "None"
+        }
+        response.clearCookie("accessToken", cookieOptions)
+        response.clearCookie("refreshToken", cookieOptions)
+
+
+        const removeRefreshToken = await UserModel.findByIdAndUpdate(userid, {
+            refresh_token: ""
+        })
+
+        return response.json({
+            message: "LogOut Successfully",
+            error: false,
+            success: true,
+
+        })
+
+
+
+
+
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false,
+        })
+
+    }
+}
 
 
 
