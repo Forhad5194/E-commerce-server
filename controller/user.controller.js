@@ -4,6 +4,7 @@ import bcryptjs from "bcryptjs"
 import { verifyEmailTemplate } from "../utils/verifyEmailTemplate.js";
 import { GenerateAccessToken } from "../utils/GenerateAccessToken.js";
 import { GenerateRefreshToken } from "../utils/GenerateRefreshToken.js";
+import uploadImageCloudinary from "../utils/uploadImageCloudinary.js";
 
 
 
@@ -233,12 +234,54 @@ export async function logoutController(request, response) {
     }
 }
 
-
-
-
-
-
-
-
-
 // LogOut controller End
+
+// Upload Avater start
+
+export async function uploadAvater( request , response) {
+    try {
+
+        const userId =  request.userId
+
+        const image = request.file
+        const upload = await uploadImageCloudinary(image)
+        const updateUser = await UserModel.findByIdAndUpdate(userId , {
+            avatar: upload.url
+        })
+
+
+
+
+
+
+
+        return response.json({
+            message: "upload profile" ,
+            data: {
+                _id : userId,
+                avatar: upload.url
+            }
+        })
+
+
+
+
+
+
+
+        
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false,
+
+        })
+    }
+}
+
+
+
+
+
+// Upload Avater End
