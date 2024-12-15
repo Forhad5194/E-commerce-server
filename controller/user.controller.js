@@ -5,6 +5,8 @@ import { verifyEmailTemplate } from "../utils/verifyEmailTemplate.js";
 import { GenerateAccessToken } from "../utils/GenerateAccessToken.js";
 import { GenerateRefreshToken } from "../utils/GenerateRefreshToken.js";
 import uploadImageCloudinary from "../utils/uploadImageCloudinary.js";
+import generatedOtp from "../utils/GeneratedOtp.js";
+import forgotPasswordEmailTemplate from "../utils/forgotPasswordEmailTemplate.js";
 
 
 
@@ -294,18 +296,18 @@ export async function updateUser(request, response) {
             hashPassword = await bcryptjs.hash(password, salt)
         }
 
-        const updateUser = await UserModel.updateOne({_id : userId}, {
+        const updateUser = await UserModel.updateOne({ _id: userId }, {
             ...(name && { name: name }),
             ...(email && { email: email }),
             ...(mobile && { mobile: mobile }),
             ...(password && { password: hashPassword })
         })
-         return response.json({
+        return response.json({
             message: "Update user successfully",
             error: false,
             success: true,
             data: updateUser
-         })
+        })
     } catch (error) {
         message = error.message || error
         error = true,
@@ -313,3 +315,118 @@ export async function updateUser(request, response) {
     }
 }
 // User update is End 
+
+// forgot password controller start 
+export async function forgotPasswordController(request, response) {
+    try {
+        const { email } = request.body;
+        const user = await UserModel.findOne({ email })
+        if (!user) {
+            return response.status(400).json({
+                message: "Email not found",
+                error: true,
+                success: false
+            })
+        }
+
+
+        const otp = generatedOtp()
+        const expireTime = new Date() + 60 * 60 * 1000
+        const update = await UserModel.findByIdAndUpdate(user._id, {
+            forgot_password_otp: otp,
+            forgot_password_expiry: new Date(expireTime).toISOString(),
+        })
+
+
+        await sendEmail({
+            sendTo: email,
+            subject: "Forgot Password",
+            html: forgotPasswordEmailTemplate({
+                name: user.name,
+                otp: otp,
+            })
+        })
+
+
+
+
+
+        return response.json({
+            message: "Otp sent successfully",
+            error: false,
+            success: true,
+        })
+
+
+
+
+
+
+    } catch (error) {
+        return response.json({
+            message: error.message || error,
+            error: true,
+            success: false,
+        })
+
+    }
+}
+// forgot password controller End 
+
+// otp vrify start
+export async function verifyForgotPasswordOtp(request, response) {
+    try {
+
+        const { email, otp } = request.body;
+
+        if (!email || !otp) {
+            return response.status(500).json({
+                message: "provide email and otp",
+                error: true,
+                success: false
+            })
+        }
+        const user = await UserModel.findOne({ email })
+        if (!user) {
+            return response.status(400).json({
+                message: "Email not found",
+                error: true,
+                success: false
+            })
+        }
+
+        const currentTime = new Date()
+        if (user.forgot_password_expiry < currentTime) {
+            return request.status(400).json({
+                message: "Otp expired",
+                error: true,
+                success: false
+            })
+        }
+
+        if (otp !== user.forgot_password_expiry) {
+            return request.status(400).json({
+                message: "Invalid Otp",
+                error: true,
+                success: false
+            })
+        }
+
+        return response.json({
+            message: "Otp verified successfully",
+            error: false,
+            success: true,
+        })
+
+
+    } catch (error) {
+
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false,
+        })
+
+    }
+}
+// otp vrify End 
