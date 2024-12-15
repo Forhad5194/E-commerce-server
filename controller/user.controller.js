@@ -238,14 +238,14 @@ export async function logoutController(request, response) {
 
 // Upload Avater start
 
-export async function uploadAvater( request , response) {
+export async function uploadAvater(request, response) {
     try {
 
-        const userId =  request.userId
+        const userId = request.userId
 
         const image = request.file
         const upload = await uploadImageCloudinary(image)
-        const updateUser = await UserModel.findByIdAndUpdate(userId , {
+        const updateUser = await UserModel.findByIdAndUpdate(userId, {
             avatar: upload.url
         })
 
@@ -256,9 +256,9 @@ export async function uploadAvater( request , response) {
 
 
         return response.json({
-            message: "upload profile" ,
+            message: "upload profile",
             data: {
-                _id : userId,
+                _id: userId,
                 avatar: upload.url
             }
         })
@@ -269,7 +269,7 @@ export async function uploadAvater( request , response) {
 
 
 
-        
+
     } catch (error) {
         return response.status(500).json({
             message: error.message || error,
@@ -279,9 +279,37 @@ export async function uploadAvater( request , response) {
         })
     }
 }
-
-
-
-
-
 // Upload Avater End
+
+
+
+// User update is start 
+export async function updateUser(request, response) {
+    try {
+        const userId = request.userId
+        const { name, email, mobile, password } = request.body
+        let hashPassword = ""
+        if (password) {
+            const salt = await bcryptjs.genSalt(10)
+            hashPassword = await bcryptjs.hash(password, salt)
+        }
+
+        const updateUser = await UserModel.updateOne({_id : userId}, {
+            ...(name && { name: name }),
+            ...(email && { email: email }),
+            ...(mobile && { mobile: mobile }),
+            ...(password && { password: hashPassword })
+        })
+         return response.json({
+            message: "Update user successfully",
+            error: false,
+            success: true,
+            data: updateUser
+         })
+    } catch (error) {
+        message = error.message || error
+        error = true,
+            success = false
+    }
+}
+// User update is End 
