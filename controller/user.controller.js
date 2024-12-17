@@ -376,57 +376,124 @@ export async function forgotPasswordController(request, response) {
 // otp vrify start
 export async function verifyForgotPasswordOtp(request, response) {
     try {
-
-        const { email, otp } = request.body;
+        const { email, otp } = request.body
 
         if (!email || !otp) {
-            return response.status(500).json({
-                message: "provide email and otp",
+            return response.status(400).json({
+                message: "Provide required field email, otp.",
                 error: true,
                 success: false
             })
         }
+
         const user = await UserModel.findOne({ email })
+
+        if (!user) {
+            return response.status(400).json({
+                message: "Email not available",
+                error: true,
+                success: false
+            })
+        }
+
+        const currentTime = new Date().toISOString()
+
+        if (user.forgot_password_expiry < currentTime) {
+            return response.status(400).json({
+                message: "Otp is expired",
+                error: true,
+                success: false
+            })
+        }
+
+        if (otp !== user.forgot_password_otp) {
+            return response.status(400).json({
+                message: "Invalid otp",
+                error: true,
+                success: false
+            })
+        }
+
+        //if otp is not expired
+        //otp === user.forgot_password_otp
+
+        const updateUser = await UserModel.findByIdAndUpdate(user?._id, {
+            forgot_password_otp: "",
+            forgot_password_expiry: ""
+        })
+
+        return response.json({
+            message: "Verify otp successfully",
+            error: false,
+            success: true
+        })
+
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false
+        })
+    }
+}
+// otp vrify End 
+
+// reser password start
+export async function resertPassword(request, response) {
+    try {
+
+        const { email, newPassword, confimPassword } = request.body
+        if (!email || !newPassword || !confimPassword) {
+            return response.status(400).json({
+                message: "provide email, new password and confirm password",
+
+            })
+        }
+
+        const user = await UserModel.findOne({ email })
+
         if (!user) {
             return response.status(400).json({
                 message: "Email not found",
                 error: true,
-                success: false
+                success: false,
+
             })
         }
 
-        const currentTime = new Date()
-        if (user.forgot_password_expiry < currentTime) {
-            return request.status(400).json({
-                message: "Otp expired",
+        if (newPassword !== confimPassword) {
+            return response.status(400).json({
+                message: "Password and confirm password not match",
                 error: true,
-                success: false
+                success: false,
+
             })
         }
 
-        if (otp !== user.forgot_password_expiry) {
-            return request.status(400).json({
-                message: "Invalid Otp",
-                error: true,
-                success: false
-            })
-        }
+        const salt = await bcryptjs.genSalt(10)
+        const hashPassword = await bcryptjs.hash(newPassword, salt)
+
+
+        const update = await UserModel.findOneAndUpdate(user._id, {
+            password: hashPassword,
+
+        })
 
         return response.json({
-            message: "Otp verified successfully",
+            message: "Password reset successfully",
             error: false,
             success: true,
         })
 
 
-    } catch (error) {
 
+    } catch (error) {
         return response.status(500).json({
             message: error.message || error,
             error: true,
             success: false,
         })
-
     }
 }
-// otp vrify End 
+// reser password End 
+
